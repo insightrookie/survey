@@ -801,9 +801,7 @@ flush();
         zip.file('음성/' + name, a.blob);
         idx.push([a.sid, a.qid, a.seconds, a.at, name].map(esc).join(','));
       });
-      zip.file('음성목록.csv', '﻿' + idx.join('
-
-'));
+      zip.file('음성목록.csv', '\uFEFF' + idx.join('\r\n'));
       dl(await zip.generateAsync({ type: 'blob' }), `얼쑤설문음성_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.zip`);
       note.textContent = '';
     });
