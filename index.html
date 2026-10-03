@@ -71,6 +71,13 @@
   .scale-labels { display: flex; justify-content: space-between; margin-top: 12px; font-size: 18px; color: var(--muted); }
 
   /* 별점 — 별 하나가 왼쪽·오른쪽 두 칸이다. 왼쪽이 0.5, 오른쪽이 1.0 (§renderStars) */
+  .picker {
+    width: 100%; padding: 22px 18px; font: inherit; font-size: 26px; text-align: center;
+    background: var(--card); color: var(--ink);
+    border: 2px solid var(--line); border-radius: 16px; -webkit-appearance: none; appearance: none;
+  }
+  .picker:focus { outline: none; border-color: var(--accent); }
+
   .stars { display: flex; gap: 6px; justify-content: center; }
   .star { position: relative; width: 17%; max-width: 104px; aspect-ratio: 1/1; line-height: 1; }
   /* 두 별을 <b>똑같이</b> 포개 두고 위쪽만 잘라 낸다. 폭을 줄여 가리면 글자가 왼쪽으로
@@ -187,6 +194,7 @@ const SURVEY = {
     multi  : 여러 개 고르기        options: [...]
     scale  : 숫자 척도             min, max, labels: [왼쪽 설명, 오른쪽 설명]
     stars  : 별점(0.5 단위)        max (기본 5)
+    select : 돌려서 고르기(연도)    years: [시작, 끝]
     range  : 밀어서 고르기          min, max, step, start, ticks: [...], format: v => '...'
     text   : 자유 서술             placeholder
     record : 음성 녹음             (녹음 파일은 드라이브에, 시트에는 링크가 들어가요)
@@ -194,42 +202,39 @@ const SURVEY = {
     showIf : 앞 응답에 따라 보여 줄지 정하기 (선택)
     id는 영문/숫자/밑줄로만 — 구글 시트 열 제목이 됩니다. */
 const QUESTIONS = [
-  { id: 'age_group', type: 'single', required: true,
-    title: '연령대를 선택해 주세요',
-    options: ['10대', '20대', '30대', '40대', '50대 이상'] },
+  { id: 'birth_year', type: 'select', required: true,
+    title: '태어난 해를 골라 주세요',
+    desc: '돌려서 고르면 돼요',
+    years: [1945, 2012] },          // 만 14세 이상만 체험하므로 2012년생까지
 
-  { id: 'channel', type: 'multi', required: true,
-    title: '어떻게 알고 오셨나요?',
-    options: ['지인 추천', 'SNS', '인터넷 검색', '현수막·포스터', '기타'] },
-
-  { id: 'satisfaction', type: 'stars', required: true,
+  { id: 'rating', type: 'stars', required: true,
     title: '이 게임에 별점을 남긴다면?',
     desc: '별의 왼쪽을 누르면 반 개, 오른쪽을 누르면 한 개예요',
     max: 5 },
 
+  { id: 'play_intent', type: 'single', required: true,
+    title: '이 게임이 출시된다면 플레이할 의향이 있으신가요?',
+    options: ['꼭 해보고 싶다', '해보고 싶다', '보통', '별로', '안 할 것 같다'] },
+
   { id: 'price', type: 'range', required: true,
-    title: '이 게임의 가격은 얼마가 적당할까요?',
+    title: '이 게임의 가격은 얼마가 적당한가요?',
+    desc: '밀어서 맞춰 주세요',
     min: 0, max: 20000, step: 1000, start: 10000,
     ticks: ['무료', '1만원', '2만원'],
     format: v => v === 0 ? '무료라면 할래요' : v.toLocaleString('ko-KR') + '원' },
 
-  { id: 'recommend', type: 'single', required: true,
-    title: '다른 사람에게 추천하시겠어요?',
-    options: ['예', '아니요', '잘 모르겠어요'] },
+  { id: 'liked', type: 'multi', required: true,
+    title: '가장 인상 깊었던 기능은?',
+    options: ['내 얼굴로 탈 만들기', '연습 게임(튜토리얼)', '본 체험', '없음'] },
 
-  { id: 'record_consent', type: 'single', required: true,
-    title: '다음 문항은 목소리로 답하는 녹음 문항이에요. 녹음에 동의하시나요?',
-    desc: '녹음 파일은 설문 분석 목적으로만 사용돼요. 동의하지 않으셔도 녹음 문항만 건너뛰고 설문을 마칠 수 있어요.',
-    options: ['동의합니다', '동의하지 않습니다'] },
+  { id: 'lacked', type: 'multi', required: true,
+    title: '부족했던 기능은?',
+    options: ['내 얼굴로 탈 만들기', '연습 게임(튜토리얼)', '본 체험', '없음'] },
 
   { id: 'voice', type: 'record', required: false,
-    title: '이용하면서 느낀 점을 자유롭게 말씀해 주세요',
-    desc: '버튼을 누르고 말씀하신 뒤, 다시 눌러 끝내 주세요. 최대 60초까지 녹음돼요.',
-    showIf: a => a.record_consent === '동의합니다' },
-
-  { id: 'comment', type: 'text', required: false,
-    title: '글로 남기고 싶은 말씀이 있다면 적어 주세요',
-    placeholder: '좋았던 점, 아쉬웠던 점 무엇이든 좋아요' },
+    title: '가장 기억에 남는 순간이나, 아쉬웠던 점을 한 가지만 들려주세요',
+    desc: '부족했던 기능은 어떻게 보완되면 좋을지도 좋아요. 버튼을 누르고 자유롭게 말씀해 주세요 — '
+        + '음성은 이 아이패드에만 저장되고, 서비스 개선에만 씁니다.' },
 ];
 
 /* =====================================================================
@@ -442,6 +447,9 @@ async function startRecording(q) {
     const prev = answers[q.id];
     if (prev && prev.url) URL.revokeObjectURL(prev.url);
     answers[q.id] = { blob, type, seconds, url: URL.createObjectURL(blob) };
+    // 마지막 문항의 녹음을 끝낸 것은 곧 설문을 마친 것이다 — 말을 마친 분에게 「제출」을
+    // 한 번 더 누르게 하지 않는다. 뒤에 줄이 서 있는 자리라 탭 하나가 아깝다.
+    if (QUESTIONS[step] === q && nextIdx(step) === -1) { submit(); return; }
     if (QUESTIONS[step] === q) render();
   };
 
@@ -514,6 +522,7 @@ function isAnswered(q) {
   if (q.type === 'text') return typeof v === 'string' && v.trim() !== '';
   if (q.type === 'record') return !!(v && v.blob);
   if (q.type === 'stars') return Number(v) > 0;
+  if (q.type === 'select') return typeof v === 'string' && v !== '';
   if (q.type === 'range') return v != null;   // 밀지 않아도 기본값이 답이다
   return v != null && v !== '';
 }
@@ -535,7 +544,13 @@ function go(to) {
 function choose(q, value) {
   if (q.type === 'multi') {
     const cur = new Set(answers[q.id] || []);
-    cur.has(value) ? cur.delete(value) : cur.add(value);
+    // 「없음」은 다른 것과 함께 고를 수 없다 — 모순된 응답을 애초에 막는다
+    if (value === '없음') {
+      cur.has('없음') ? cur.clear() : (cur.clear(), cur.add('없음'));
+    } else {
+      cur.delete('없음');
+      cur.has(value) ? cur.delete(value) : cur.add(value);
+    }
     answers[q.id] = q.options.filter(o => cur.has(o)); // 보기 순서 유지
     render();
     return;
@@ -582,6 +597,8 @@ function renderQuestion(q) {
       nums.map(n => optionButton(q, String(n), String(n), false))));
     if (q.labels) parts.push(h('div', { class: 'scale-labels' },
       h('span', {}, q.labels[0]), h('span', {}, q.labels[1])));
+  } else if (q.type === 'select') {
+    parts.push(renderSelect(q));
   } else if (q.type === 'stars') {
     parts.push(renderStars(q));
   } else if (q.type === 'range') {
@@ -597,6 +614,19 @@ function renderQuestion(q) {
     parts.push(renderRecorder(q));
   }
   return parts;
+}
+
+/* 돌려서 고르기 — iOS 사파리는 <select> 를 화면 아래 <b>돌림판</b>으로 띄운다.
+   해가 일흔 개가 넘어 단추로 늘어놓을 수 없고, 숫자를 치게 하면 오타와 키보드가 끼어든다.
+   years: [시작, 끝] 을 받아 <b>최근 해부터</b> 보여 준다 — 체험자 대부분이 젊은 쪽이다. */
+function renderSelect(q) {
+  const [from, to] = q.years || [1945, 2012];
+  const sel = h('select', { class: 'picker', 'aria-label': q.title,
+    onchange: e => { answers[q.id] = e.target.value; refreshNext(); } });
+  sel.append(h('option', { value: '' }, '선택해 주세요'));
+  for (let y = to; y >= from; y--) sel.append(h('option', { value: String(y) }, y + '년'));
+  sel.value = answers[q.id] || '';
+  return sel;
 }
 
 /* 별점 — 반 칸까지 준다.
