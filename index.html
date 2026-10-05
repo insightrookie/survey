@@ -265,7 +265,7 @@ const $bar = document.getElementById('bar');
 
 let step = -1;          // -1: 시작 화면, 0..N-1: 문항, N: 완료 화면
 let answers = {};
-let advanceTimer, resetTimer, idleTimer, countdownTimer;
+let resetTimer, idleTimer, countdownTimer;
 let nextBtn = null;
 
 /* ---------- 문항 표시 여부 / 이동 ---------- */
@@ -550,7 +550,6 @@ function refreshNext() {
 }
 
 function go(to) {
-  clearTimeout(advanceTimer);
   stopRecording(true);
   recError = '';
   step = to;
@@ -573,10 +572,10 @@ function choose(q, value) {
   }
   answers[q.id] = value;
   render();
-  // 하나만 고르는 문항은 고르면 자동으로 다음으로 (마지막 문항 제외)
-  clearTimeout(advanceTimer);
-  const nx = nextIdx(step);
-  if (nx !== -1) advanceTimer = setTimeout(() => go(nx), 280);
+  // 고른다고 저절로 넘어가지는 않는다. 예전에는 '하나만 고르는 문항' 만 0.28초 뒤 다음으로
+  // 넘어갔는데, 별점·슬라이더·복수선택은 그러지 않아 <b>어떤 화면은 넘어가고 어떤 화면은
+  // 안 넘어가는</b> 꼴이었다. 체험자가 화면을 못 믿게 되고, 잘못 눌러도 되돌릴 틈이 없다.
+  // 넘기는 것은 늘 「다음」 하나다.
 }
 
 function optionButton(q, value, label, multi) {
