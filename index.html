@@ -552,8 +552,20 @@ function refreshNext() {
 function go(to) {
   stopRecording(true);
   recError = '';
+  // 첫 화면에 닿으면 쓰다 만 응답을 비운다. 어느 길로 왔든 — 끝까지 마치고 돌아왔든,
+  // 중간에 「이전」으로 나왔든, 자리 비움으로 되돌았든 — 첫 화면은 <b>다음 사람의 자리</b>다.
+  // 「시작하기」가 1번 문항부터 다시 여는 이상, 첫 화면에 선 것은 곧 새로 시작한다는 뜻이다.
+  // 운영자가 단추를 눌러 주기를 기다리면 바쁜 날에 잊고, 그러면 다음 분이 앞사람 답을 본다.
+  if (to === -1) clearDraft();
   step = to;
   render();
+}
+
+/* 쓰다 만 응답 하나만 비운다 — 보낸 응답도, 기기에 쌓인 음성도 건드리지 않는다.
+   녹음 미리듣기로 만든 blob URL 은 놓아 준다(안 놓으면 판마다 메모리가 쌓인다). */
+function clearDraft() {
+  for (const v of Object.values(answers)) if (v && v.url) URL.revokeObjectURL(v.url);
+  answers = {};
 }
 
 function choose(q, value) {
@@ -769,11 +781,7 @@ function render() {
   resetTimer = setTimeout(restart, SURVEY.resetSeconds * 1000);
 }
 
-function restart() {
-  for (const v of Object.values(answers)) if (v && v.url) URL.revokeObjectURL(v.url);
-  answers = {};
-  go(-1);
-}
+function restart() { go(-1); }   // 비우는 일은 go 가 한다(§clearDraft)
 
 /* 응답 도중 자리를 떠나면 일정 시간 뒤 처음으로 (다음 사람이 이어서 쓰지 않게) */
 function bumpIdle() {
